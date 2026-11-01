@@ -1,0 +1,23 @@
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions & OS files
+*.so
+.DS_Store
+Thumbs.db
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# PyInstaller build outputs
+dist/
+build/
+*.spec
+
+# Local IDE configuration
+.vscode/
+.idea/

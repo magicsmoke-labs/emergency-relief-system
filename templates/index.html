@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency Relief Allocation Dashboard</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --critical: #ef4444;
+      --high: #f97316;
+      --moderate: #eab308;
+      --fulfilled: #22c55e;
+      --partial: #0ea5e9;
+      --pending: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 24px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+
+    .title-group h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .title-group p {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      margin-top: 4px;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      background-color: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: all 0.15s ease;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    button.btn-primary {
+      background-color: #0284c7;
+      border-color: #0284c7;
+      color: #fff;
+    }
+
+    button.btn-primary:hover {
+      background-color: #0369a1;
+      border-color: #0369a1;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 20px;
+    }
+
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .panel-header {
+      font-size: 1rem;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    input, select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      width: 100%;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .right-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .table-container {
+      max-height: 260px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.825rem;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: #111827;
+      position: sticky;
+      top: 0;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-size: 0.72rem;
+    }
+
+    tr:hover td {
+      background: #243248;
+    }
+
+    .badge {
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      display: inline-block;
+      text-transform: uppercase;
+    }
+
+    .badge-critical { background: rgba(239, 68, 68, 0.2); color: var(--critical); border: 1px solid var(--critical); }
+    .badge-high { background: rgba(249, 115, 22, 0.2); color: var(--high); border: 1px solid var(--high); }
+    .badge-moderate { background: rgba(234, 179, 8, 0.2); color: var(--moderate); border: 1px solid var(--moderate); }
+    
+    .badge-fulfilled { background: rgba(34, 197, 94, 0.2); color: var(--fulfilled); border: 1px solid var(--fulfilled); }
+    .badge-partial { background: rgba(14, 165, 233, 0.2); color: var(--partial); border: 1px solid var(--partial); }
+    .badge-pending { background: rgba(100, 116, 139, 0.2); color: var(--pending); border: 1px solid var(--pending); }
+    .badge-unfulfilled { background: rgba(239, 68, 68, 0.2); color: var(--critical); border: 1px solid var(--critical); }
+
+    .inv-warning {
+      color: var(--critical);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="title-group">
+      <h1>Emergency Relief Allocation System</h1>
+      <p>Logistical Coordination, Priority Matching & Stock Auditing</p>
+    </div>
+    <div class="top-actions">
+      <button class="btn-primary" onclick="triggerAllocation()">Run Allocation Engine</button>
+      <button onclick="exportData('csv')">Export CSV</button>
+      <button onclick="exportData('json')">Export JSON</button>
+      <button onclick="loadAllData()">Refresh Data</button>
+    </div>
+  </header>
+
+  <div class="dashboard-grid">
+    <!-- ----------------------------- -->
+    <!-- INPUT / INGESTION PANELS     -->
+    <!-- ----------------------------- -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <div class="panel">
+        <div class="panel-header">
+          <span>Submit Relief Request</span>
+        </div>
+        <form id="requestForm" onsubmit="submitRequest(event)">
+          <div>
+            <label>Shelter Target</label>
+            <select id="reqShelterSelect" required>
+              <option value="">Select registered shelter...</option>
+            </select>
+          </div>
+          <div>
+            <label>Item Name</label>
+            <input type="text" id="reqItem" placeholder="e.g. blankets, water, tents" required>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <div style="flex: 1;">
+              <label>Quantity</label>
+              <input type="number" id="reqQty" min="1" required>
+            </div>
+            <div style="flex: 1;">
+              <label>Urgency Level</label>
+              <select id="reqUrgency" required>
+                <option value="Critical">Critical</option>
+                <option value="High">High</option>
+                <option value="Moderate" selected>Moderate</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary" style="margin-top: 6px;">Submit Request</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span>Inbound Stock Ingest</span>
+        </div>
+        <form id="inventoryForm" onsubmit="submitInventory(event)">
+          <div style="display: flex; gap: 10px;">
+            <div style="flex: 1;">
+              <label>Warehouse ID</label>
+              <input type="text" id="invWarehouse" placeholder="WH-1" required>
+            </div>
+            <div style="flex: 1;">
+              <label>Quantity</label>
+              <input type="number" id="invQty" min="1" required>
+            </div>
+          </div>
+          <div>
+            <label>Item Name</label>
+            <input type="text" id="invItem" placeholder="e.g. blankets" required>
+          </div>
+          <button type="submit" style="margin-top: 6px;">Deposit to Inventory</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span>Register New Shelter</span>
+        </div>
+        <form id="shelterForm" onsubmit="submitShelter(event)">
+          <div>
+            <label>Shelter Name</label>
+            <input type="text" id="shName" placeholder="North Camp" required>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <div style="flex: 1;">
+              <label>Shelter ID</label>
+              <input type="text" id="shId" placeholder="SH-1" required>
+            </div>
+            <div style="flex: 1;">
+              <label>Priority (1-5)</label>
+              <input type="number" id="shPriority" min="1" max="5" value="3" required>
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <div style="flex: 1;">
+              <label>Latitude</label>
+              <input type="number" step="any" id="shLat" value="25.2048" required>
+            </div>
+            <div style="flex: 1;">
+              <label>Longitude</label>
+              <input type="number" step="any" id="shLon" value="55.2708" required>
+            </div>
+          </div>
+          <button type="submit" style="margin-top: 6px;">Add Shelter</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ----------------------------- -->
+    <!-- MONITORING & LOG PANELS      -->
+    <!-- ----------------------------- -->
+    <div class="right-stack">
+      <div class="panel">
+        <div class="panel-header">
+          <span>Live Warehouse Stock</span>
+          <span id="invCount" style="color: var(--text-muted); font-size: 0.75rem;">0 Items</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Warehouse</th>
+                <th>Item</th>
+                <th>Quantity On Hand</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span>Shelter Request Queue</span>
+          <span id="reqCount" style="color: var(--text-muted); font-size: 0.75rem;">0 Requests</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Req ID</th>
+                <th>Shelter</th>
+                <th>Item</th>
+                <th>Requested</th>
+                <th>Fulfilled</th>
+                <th>Urgency</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="requestsTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span>Processed Allocation Audit Log</span>
+          <span id="logCount" style="color: var(--text-muted); font-size: 0.75rem;">0 Logs</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Log ID</th>
+                <th>Req ID</th>
+                <th>Shelter</th>
+                <th>Dispatched WH</th>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="logsTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // -----------------------------
+    // DATA FETCHING & RENDERING
+    // -----------------------------
+    async function loadAllData() {
+      await Promise.all([
+        loadShelters(),
+        loadInventory(),
+        loadRequests(),
+        loadLogs()
+      ]);
+    }
+
+    async function loadShelters() {
+      const res = await fetch('/api/shelters');
+      const shelters = await res.json();
+      const select = document.getElementById('reqShelterSelect');
+      select.innerHTML = '<option value="">Select registered shelter...</option>';
+      shelters.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.shelter_id;
+        opt.textContent = `${s.name} (${s.shelter_id}) - Pri: ${s.priority}`;
+        select.appendChild(opt);
+      });
+    }
+
+    async function loadInventory() {
+      const res = await fetch('/api/inventory');
+      const data = await res.json();
+      const tbody = document.getElementById('inventoryTable');
+      document.getElementById('invCount').textContent = `${data.length} Records`;
+      tbody.innerHTML = '';
+
+      data.forEach(row => {
+        const tr = document.createElement('tr');
+        const isDepleted = row.quantity === 0;
+        const isLow = row.quantity > 0 && row.quantity < 10;
+        
+        let statusBadge = `<span class="badge badge-fulfilled">In Stock</span>`;
+        if (isDepleted) statusBadge = `<span class="badge badge-unfulfilled">Depleted</span>`;
+        else if (isLow) statusBadge = `<span class="badge badge-high">Low Stock</span>`;
+
+        tr.innerHTML = `
+          <td><strong>${row.warehouse_id}</strong></td>
+          <td>${row.item}</td>
+          <td class="${isDepleted ? 'inv-warning' : ''}">${row.quantity}</td>
+          <td>${statusBadge}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function loadRequests() {
+      const res = await fetch('/api/requests');
+      const data = await res.json();
+      const tbody = document.getElementById('requestsTable');
+      document.getElementById('reqCount').textContent = `${data.length} Requests`;
+      tbody.innerHTML = '';
+
+      data.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.request_id}</td>
+          <td>${r.shelter_name}</td>
+          <td>${r.item}</td>
+          <td>${r.quantity}</td>
+          <td>${r.fulfilled_qty}</td>
+          <td><span class="badge badge-${r.urgency.toLowerCase()}">${r.urgency}</span></td>
+          <td><span class="badge badge-${r.status.toLowerCase()}">${r.status}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function loadLogs() {
+      const res = await fetch('/api/logs');
+      const data = await res.json();
+      const tbody = document.getElementById('logsTable');
+      document.getElementById('logCount').textContent = `${data.length} Logs`;
+      tbody.innerHTML = '';
+
+      data.forEach(l => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>#${l.log_id}</td>
+          <td>${l.request_id}</td>
+          <td>${l.shelter_name}</td>
+          <td>${l.warehouse_id}</td>
+          <td>${l.item}</td>
+          <td><strong>+${l.allocated_qty}</strong></td>
+          <td style="color: var(--text-muted); font-size: 0.75rem;">${l.timestamp}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // -----------------------------
+    // FORM SUBMISSIONS
+    // -----------------------------
+    async function submitRequest(e) {
+      e.preventDefault();
+      const payload = {
+        shelter_id: document.getElementById('reqShelterSelect').value,
+        item: document.getElementById('reqItem').value,
+        quantity: parseInt(document.getElementById('reqQty').value, 10),
+        urgency: document.getElementById('reqUrgency').value
+      };
+
+      const res = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        document.getElementById('requestForm').reset();
+        await loadRequests();
+      } else {
+        const err = await res.json();
+        alert(`Error: ${err.error || 'Failed to submit request'}`);
+      }
+    }
+
+    async function submitInventory(e) {
+      e.preventDefault();
+      const payload = {
+        warehouse_id: document.getElementById('invWarehouse').value,
+        item: document.getElementById('invItem').value,
+        quantity: parseInt(document.getElementById('invQty').value, 10)
+      };
+
+      const res = await fetch('/api/inventory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        document.getElementById('inventoryForm').reset();
+        await loadInventory();
+      } else {
+        const err = await res.json();
+        alert(`Error: ${err.error || 'Failed to update inventory'}`);
+      }
+    }
+
+    async function submitShelter(e) {
+      e.preventDefault();
+      const payload = {
+        shelter_id: document.getElementById('shId').value,
+        name: document.getElementById('shName').value,
+        priority: parseInt(document.getElementById('shPriority').value, 10),
+        lat: parseFloat(document.getElementById('shLat').value),
+        lon: parseFloat(document.getElementById('shLon').value)
+      };
+
+      const res = await fetch('/api/shelters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        document.getElementById('shelterForm').reset();
+        await loadShelters();
+      } else {
+        const err = await res.json();
+        alert(`Error: ${err.error || 'Failed to add shelter'}`);
+      }
+    }
+
+    // -----------------------------
+    // ACTIONS & EXPORTS
+    // -----------------------------
+    async function triggerAllocation() {
+      const res = await fetch('/api/allocate', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        await loadAllData();
+      } else {
+        alert(`Allocation Error: ${data.error || 'Failed to run allocation engine'}`);
+      }
+    }
+
+    function exportData(format) {
+      window.open(`/api/export/${format}`, '_blank');
+    }
+
+    document.addEventListener('DOMContentLoaded', loadAllData);
+  </script>
+</body>
+</html>
